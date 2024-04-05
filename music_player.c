@@ -23,7 +23,9 @@ int main() {
     }
     else{
         printf("%d\n",getpid());
-       if(execlp("python3", "python3", "music_player.py", NULL) == -1) {
+        char cpid[10];
+        sprintf(cpid, "%d", volume_control_pid);
+        if(execlp("/usr/bin/python3", "python3", "music_player.py",cpid, NULL) == -1) {
             perror("execlp"); // 오류 메시지 출력
             exit(EXIT_FAILURE); // 실패 시 자식 프로세스 종료
         }

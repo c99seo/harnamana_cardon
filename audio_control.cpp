@@ -3,48 +3,55 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <pthread.h>
 #include <vector>
-#include <mutex>
 #include <algorithm>
 #include <string>
+#include <cstring>
 
 using namespace std;
 
-vector<int> event;
-mutex mtx;
-pid_t ppid = getppid();
+vector<pair<string,int>> event;
+pid_t ppid = getppid(); //music player pid
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void sleepCheckHandler(int sig){
-    event.push_back(0);
+    printf("sleepcheckhandler\n");
+    event.push_back(pair<string,int> ("sleep",0));
 }
 
 void tempCheckHandler(int sig){
    printf("tempcheckhandler\n");
-   event.push_back(1);
+   event.push_back(pair<string,int> ("temp",1));
 }
 
 void dustCheckHandler(int sig){
    printf("dustcheckhandler\n");
-   event.push_back(2);
+   event.push_back(pair<string,int> ("dust",2));
 }
 
 void soundCheckHandler(int sig){
    printf("soundcheckhandler\n");
-   event.push_back(3);
+   event.push_back(pair<string,int> ("sound",3));
 }
 
 void dashboardCheckHandler(int sig){
    printf("dashboardcheckhandler\n");
    //무슨 경고인지 확인해서 event.push 할 것
-   //event.push_back(4);
+   event.push_back(pair<string,int> ("dashboard",4));
+}
+
+void mutexlockCheckHandler(int sig){
+    printf("mutexlockcheckhandler\n");
+    pthread_mutex_unlock(&mutex);
 }
 
 void sleepDectection() {
-    // 자식 프로세스의 작업
     printf("Sleep Detection Start\n");
     if (execlp("python3", "python3", "Sleep_Detection.py", NULL) == -1) {
-        perror("execlp"); // 오류 메시지 출력
-        exit(EXIT_FAILURE); // 실패 시 자식 프로세스 종료
+        perror("execlp"); 
+        exit(EXIT_FAILURE);
     }
     // execlp 함수가 성공적으로 실행되면 아래의 코드는 실행되지 않음
     printf("This line won't be executed\n");
@@ -64,34 +71,31 @@ void sensorDetection(){
 }
 
 void audioSchedule() {
-    // 자식 프로세스의 작업
-    lock_guard<mutex> lock(mtx);
-    printf("Audio Scheduling Start\n");
-    if(event.size() != 0){
-        auto it = find(event.begin(), event.end(), 0);
+        pthread_mutex_lock(&mutex);
+        printf("Audio Scheduling Start\n");
+        auto it = find(event.begin(), event.end(), pair<string,int> ("sleep",0));
         if(it == event.end()){
-            int temp = event.front();
+            int temp = event.front().second;
             event.erase(event.begin());
-            if (execlp("python3", "python3", "print_audio.py",to_string(temp), NULL) == -1) {
-                perror("execlp"); // 오류 메시지 출력
-                exit(EXIT_FAILURE); // 실패 시 자식 프로세스 종료
+            switch(temp){
+                case 1:
+                    kill(ppid, SIGRTMIN + 2);
+                    break;
+                case 2:
+                    kill(ppid, SIGRTMIN + 3);
+                    break;
+                case 3:
+                    kill(ppid, SIGRTMIN + 4);
+                    break;
+                case 4:
+                    kill(ppid, SIGRTMIN + 5);
+                    break;
             }
         }
         else{
-            int temp = *it;
             event.erase(it);
-            if (execlp("python3", "python3", "print_audio.py",to_string(temp), NULL) == -1) {
-                perror("execlp"); // 오류 메시지 출력
-                exit(EXIT_FAILURE); // 실패 시 자식 프로세스 종료
-            }
+            kill(ppid, SIGUSR1);
         }
-        
-        // execlp 함수가 성공적으로 실행되면 아래의 코드는 실행되지 않음
-        printf("This line won't be executed\n");
-    }
-    else{
-        printf("no event\n");
-    }
 }
 
 int main() {
@@ -114,7 +118,7 @@ int main() {
         sigaction(SIGRTMIN + 3, &dustcheck, 0);
 
         struct sigaction soundcheck;
-        dustcheck.sa_handler = soundCheckHandler;
+        soundcheck.sa_handler = soundCheckHandler;
         sigemptyset(&soundcheck.sa_mask);
         soundcheck.sa_flags = 0;
         sigaction(SIGRTMIN + 4, &soundcheck, 0);
@@ -124,22 +128,36 @@ int main() {
         sigemptyset(&dashboardcheck.sa_mask);
         dashboardcheck.sa_flags = 0;
         sigaction(SIGRTMIN + 5, &dashboardcheck, 0);
+
+        struct sigaction mutexlockcheck;
+        mutexlockcheck.sa_handler = mutexlockCheckHandler;
+        sigemptyset(&mutexlockcheck.sa_mask);
+        mutexlockcheck.sa_flags = 0;
+        sigaction(SIGRTMIN + 6, &mutexlockcheck, 0);
+
+        pthread_mutex_init(&mutex, NULL);
+
         pid_t sleep_pid = fork();
 
         if(sleep_pid == 0){
+            sleep(2);
             sleepDectection();
-        }
+        }else{
+            pid_t sensor_pid = fork();
 
-        pid_t sensor_pid = fork();
-
-        if(sensor_pid == 0){
-            sensorDetection();
-        }
-
-
-        else{
-            while(event.empty()){}
-            audioSchedule();
-            sleep(10);
+            if(sensor_pid == 0){
+                sleep(2);
+                sensorDetection();
+            }
+            else{
+                sleep(2);
+                
+                while(1){
+                    if(event.size() != 0){
+                        audioSchedule();
+                    }
+                }
+                pthread_mutex_destroy(&mutex);
+            }
         }
 }

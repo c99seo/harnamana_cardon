@@ -62,6 +62,7 @@ void sensorDetection(){
     //kill(parent_pid, SIGRTMIN + 4);
     //계기판 경고인식해서 
     //kill(parent_pid, SIGRTMIN + 5);
+    //스위치 값 인식해서 외부라파로 전송하기
 }
 
 int main() {

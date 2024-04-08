@@ -4,12 +4,50 @@
 #include <signal.h>
 #include <sys/wait.h>
 
+#include <wiringPi.h>
+
+#define trigPin 1	//gpio 21
+#define echoPin 29	//gpio 18
+
 void pedestrianCheckHandler(int sig){
     //초음파 센서로 거리 측정하고
     //속도에 따라서 제동 거리 계산(90-110db로 제동거리를 scale)
     //보행자 거리를 측정해서 제동 거리 내에 있으면 즉각 가상 배기음 출력
-    printf("Watchout\n");
-    sleep(3);
+    
+    int distance=0;
+	int pulse = 0;
+	
+	long startTime;
+	long travelTime;
+	
+	if(wiringPiSetup () == -1)
+	{
+		printf("Unable GPIO Setup"); 
+	}
+		
+	pinMode (trigPin, OUTPUT);
+	pinMode (echoPin, INPUT);
+	
+	for(;;)
+	{
+		digitalWrite (trigPin, LOW);
+		usleep(2);
+		digitalWrite (trigPin, HIGH);
+		usleep(20);
+		digitalWrite (trigPin, LOW);
+		
+		while(digitalRead(echoPin) == LOW);
+		
+		startTime = micros();
+		
+		while(digitalRead(echoPin) == HIGH);
+		travelTime = micros() - startTime;
+		
+		int distance = travelTime / 58;
+		
+		printf( "Distance: %dcm\n", distance);
+		delay(200);
+	}
 
 }
 

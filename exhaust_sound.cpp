@@ -6,6 +6,9 @@
 #include <cstdlib>
 
 #include <wiringPi.h>
+#include <string>
+
+using namespace std;
 
 #define trigPin 1	//gpio 21
 #define echoPin 29	//gpio 18
@@ -46,7 +49,8 @@ void pedestrianCheckHandler(int sig){
 		
 		int distance = travelTime / 58;
 		if(distance < 10){
-            const char* mp3FilePath = "/path/to/your/file.mp3";
+            const char* mp3FilePath = "watchout.mp3";
+            system("amixer -D pulse sset Master 70%");
             system(("mpg123 " + string(mp3FilePath)).c_str());
             break;
         }

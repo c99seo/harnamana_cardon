@@ -38,7 +38,7 @@ while True:
         human_detecting_counter = human_detecting_counter + 1
         print(human_detecting_counter)
 
-    #cv2.imshow('frame', frame)
+    cv2.imshow('frame', frame)
 
     if cv2.waitKey(10) == 27:
         break

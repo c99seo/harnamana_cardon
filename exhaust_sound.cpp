@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <cstdlib>
 
 #include <wiringPi.h>
 
@@ -44,7 +45,11 @@ void pedestrianCheckHandler(int sig){
 		travelTime = micros() - startTime;
 		
 		int distance = travelTime / 58;
-		
+		if(distance < 10){
+            const char* mp3FilePath = "/path/to/your/file.mp3";
+            system(("mpg123 " + string(mp3FilePath)).c_str());
+            break;
+        }
 		printf( "Distance: %dcm\n", distance);
 		delay(200);
 	}

@@ -8,6 +8,7 @@ void pedestrianCheckHandler(int sig){
     //초음파 센서로 거리 측정하고
     //속도에 따라서 제동 거리 계산(90-110db로 제동거리를 scale)
     //보행자 거리를 측정해서 제동 거리 내에 있으면 즉각 가상 배기음 출력
+    printf("Watchout");
 }
 
 int main(){

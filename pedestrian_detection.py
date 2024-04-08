@@ -3,6 +3,8 @@
 import cv2
 import random
 import sys
+import os
+import signal
 
 # 동영상 불러오기
 cap=cv2.VideoCapture(0)
@@ -40,6 +42,7 @@ while True:
         break
 
     if human_detecting_counter >= 10:
+        os.kill(os.getppid(),signal.SIGUSR1)
         break
 
 cv2.destroyAllWindows()

@@ -36,13 +36,17 @@ while True:
         c = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         cv2.rectangle(frame, (x, y, w, h), c, 3)
         human_detecting_counter = human_detecting_counter + 1
+        print(human_detecting_counter)
 
-    cv2.imshow('frame', frame)
+    #cv2.imshow('frame', frame)
+
     if cv2.waitKey(10) == 27:
         break
 
     if human_detecting_counter >= 10:
-        os.kill(os.getppid(),signal.SIGUSR1)
-        break
+        ppid = os.getppid()
+        os.kill(ppid,signal.SIGUSR1)
+        print("signal send to",ppid)
+        exit(0)
 
 cv2.destroyAllWindows()
